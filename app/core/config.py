@@ -17,8 +17,14 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
 
     triton_url: str = "localhost:8001"
+    triton_healthcheck: bool = True
     max_batch_size: int = 8
     request_timeout_seconds: float = 30.0
+
+    detection_model_name: str = "detection"
+    extraction_model_name: str = "extraction"
+    detection_input_width: int = 640
+    detection_input_height: int = 640
 
     rerank_threshold: float = 0.5
     return_aligned: bool = False
@@ -39,9 +45,14 @@ class Settings(BaseSettings):
         """Whether the application should run in debug mode."""
         return self.env == "local"
 
+    @computed_field
+    @property
+    def detection_input_size(self) -> tuple[int, int]:
+        """Detection model input size expressed as (width, height)."""
+        return self.detection_input_width, self.detection_input_height
+
 
 @lru_cache
 def get_settings() -> Settings:
     """Return cached Settings instance."""
     return Settings()  # type: ignore[call-arg]
-

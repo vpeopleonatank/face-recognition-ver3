@@ -44,11 +44,14 @@
     - Install system libs and Python deps.
     - Copy app code and shared libraries.
     - Set entrypoint to `uvicorn`.
-23. Add configuration examples (`.env.example`, docker-compose snippet, or Helm values).
-24. Document deployment steps in README or ops doc (environment variables, ports, health checks).
+23. Finalize Triton packaging:
+    - Generate TensorRT plans by running `triton-infer-custom/build.sh` (ensures `model.plan` artifacts exist under `models_serving`).
+    - Review `triton-infer-custom/Dockerfile` and update dependencies/entrypoint if additional custom ops or models are required.
+    - Tag the resulting image (`tritonserver-plan-vnd:24.11-py3` by default) for docker-compose consumption.
+24. Add configuration examples (`.env.example`, docker-compose snippet, or Helm values) referencing both the API and custom Triton services.
+25. Document deployment steps in README or ops doc (environment variables, ports, health checks, Triton image build prerequisites).
 
 ## Phase 8 – Integration & Rollout
-25. Run end-to-end tests in staging with Triton v3 server and sample images; verify embeddings and rerank outputs.
-26. Coordinate with web backend team to consume `/embeddings` and `/rerank` endpoints (update API contract docs).
-27. Plan production rollout: deploy service, update backend configuration to call new endpoints, monitor metrics/logs, and iterate on thresholds as needed.
-
+26. Run end-to-end tests in staging with the docker-compose stack (FastAPI + custom Triton) and sample images; verify embeddings and rerank outputs.
+27. Coordinate with web backend team to consume `/embeddings` and `/rerank` endpoints (update API contract docs).
+28. Plan production rollout: deploy service, update backend configuration to call new endpoints, monitor metrics/logs, and iterate on thresholds as needed.

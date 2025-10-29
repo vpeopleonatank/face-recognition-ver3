@@ -11,7 +11,7 @@
 - **Triton Client Layer** – Adaptation of the `StandaloneTritonClient` from `face_v3/infer.py`, reused via dependency injection and thread pools for async friendliness.
 - **Rerank Service** – Python wrapper around `librerank_compute.so`, instantiated once at startup and reused for scoring candidate lists supplied by upstream services.
 - **Response Builder** – Packages per-face detection metadata, aligned face info (optional), embeddings, and rerank scores in a consistent schema.
-- **Deployment** – Docker image containing the FastAPI app, Triton gRPC client dependencies, and required shared libraries (`libmerge_embeddings.so`, `librerank_compute.so`).
+- **Deployment** – Docker image for the FastAPI app orchestrated via docker-compose alongside a Triton Server container built from `triton-infer-custom/` assets, sharing a network and any required model/shared-library volumes (`libmerge_embeddings.so`, `librerank_compute.so`).
 
 ## 3. Request Workflows
 
@@ -51,17 +51,28 @@
 - Monitor rerank execution time; expect sub-millisecond latency per request for typical candidate counts (<200).
 
 ## 7. Deployment Plan
-- **Dockerfile**
+- **Dockerfile (API Service)**
   - Base on a CUDA-enabled Python image compatible with the Triton gRPC client.
   - Install system libraries required by OpenCV and the shared objects.
   - Copy the FastAPI application, Python dependencies, and shared libraries (`libmerge_embeddings.so`, `librerank_compute.so`).
   - Expose port 8000; run `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
-- **Configuration**
-  - Environment variables for `TRITON_URL`, `RERANK_THRESHOLD`, `MAX_BATCH_SIZE`, `RETURN_ALIGNED`.
-  - Optionally mount directories for shared libraries or face alignment templates if they change per deployment.
-- **Orchestration**
-  - Provide Kubernetes manifest or docker-compose snippet for running the FastAPI service alongside Triton in staging/production.
-  - `/healthz` checks should verify Triton connectivity and rerank library availability; optionally include a lightweight inference smoke test.
+- **Docker Compose Stack**
+  - Define `docker-compose.yml` with two services:
+    - `api`: builds from the local Dockerfile, mounts shared libraries if they are distributed outside the image, and injects environment variables (`TRITON_URL=triton:8001`, `RERANK_THRESHOLD`, `MAX_BATCH_SIZE`, `RETURN_ALIGNED`).
+    - `triton`: references the custom image tag produced by `triton-infer-custom/build.sh` (defaults to `tritonserver-plan-vnd:24.11-py3`), mounts the generated TensorRT engines under `models_serving`, and exposes gRPC on `8001` (left un-published but available on the compose network).
+  - Use a dedicated Docker network created by compose so the API refers to Triton via the service name (`triton`).
+  - Mount a shared volume if the API must read inference outputs (e.g., cached templates) written by Triton, otherwise keep services isolated.
+  - Configure `depends_on` with health checks so the API waits for Triton readiness before starting; reuse Triton health endpoint or add a custom script that polls gRPC readiness.
+- **Triton Build Flow**
+  - Run `triton-infer-custom/build.sh` to convert ONNX models to TensorRT engines (`model.plan`) before building the `tritonserver-plan-vnd:24.11-py3` image. The script currently requires local GPU access and Docker with NVIDIA runtime for `trtexec`.
+  - The accompanying Dockerfile installs CUDA-compatible dependencies, copies `models_serving`, and installs the custom Python ops (`pip3 install /models/split_b/.../rpe_ops`) prior to launching Triton. Update the script if additional models or dependencies are introduced.
+  - Document any environment prerequisites (sudo-less docker, GPU access) and consider wrapping the build in Make targets for reproducibility.
+- **Configuration & Secrets**
+  - Provide a `.env` file consumed by docker-compose to centralize environment knobs for both services (thresholds, batching, log levels, optional tracing endpoints).
+  - Allow overrides for GPU selection (e.g., `device_requests` in compose) and optional host mounts for observability exporters.
+- **Operational Notes**
+  - `/healthz` should validate Triton connectivity and rerank library availability at startup.
+  - For staging/production, extend the compose file with profiles for metrics/monitoring sidecars or adapt it into Kubernetes manifests once requirements outgrow single-host deployment.
 
 ## 8. Testing Strategy
 - Unit tests for image decoding/alignment utilities and rerank wrapper initialization.
@@ -77,4 +88,3 @@
 4. Deploy to staging with Triton v3 server; run regression tests for embedding accuracy and rerank scoring.
 5. Update API documentation and client usage notes before promoting to production.
 6. Monitor logs/metrics post-release; tune rerank threshold and batching parameters as needed.
-

@@ -10,7 +10,7 @@ from loguru import logger
 from app.api.v1.routes import router
 from app.core.config import Settings, get_settings
 from app.services.rerank import RerankServiceProtocol
-from app.services.triton_client import TritonClientProtocol
+from app.services.triton_client import ModelIOConfig, TritonClient, TritonClientProtocol
 
 
 def create_app() -> FastAPI:
@@ -37,7 +37,10 @@ def _lifespan_context(*, settings: Settings):
         logger.info("Starting {}", settings.app_name)
 
         app.state.settings = settings
-        app.state.triton_client = None  # placeholder for future Triton client
+        triton_client = _create_triton_client(settings)
+        if triton_client:
+            await triton_client.warmup()
+        app.state.triton_client = triton_client
         app.state.rerank_service = None  # placeholder for future rerank service
 
         yield
@@ -52,6 +55,35 @@ def _lifespan_context(*, settings: Settings):
         logger.info("Shutdown complete for {}", settings.app_name)
 
     return lifespan
+
+
+def _create_triton_client(settings: Settings) -> TritonClient | None:
+    """Instantiate the Triton client using application settings."""
+    try:
+        detection_model = ModelIOConfig.detection_defaults()
+        detection_model.name = settings.detection_model_name
+
+        extraction_model = ModelIOConfig.extraction_defaults()
+        extraction_model.name = settings.extraction_model_name
+
+        logger.info(
+            "Connecting to Triton server at {} for models det='{}' ext='{}'",
+            settings.triton_url,
+            detection_model.name,
+            extraction_model.name,
+        )
+
+        return TritonClient(
+            url=settings.triton_url,
+            detection_model=detection_model,
+            extraction_model=extraction_model,
+            detection_input_size=settings.detection_input_size,
+            request_timeout=settings.request_timeout_seconds,
+            healthcheck=settings.triton_healthcheck,
+        )
+    except Exception as exc:  # pragma: no cover - startup failure
+        logger.error("Failed to initialize Triton client: {}", exc)
+        raise
 
 
 def get_app_settings(request: Request) -> Settings:
