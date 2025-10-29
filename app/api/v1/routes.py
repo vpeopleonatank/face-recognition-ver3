@@ -89,9 +89,9 @@ async def read_health(
 )
 async def create_embeddings(
     payload: EmbeddingsRequest,
+    request: Request,
     settings: Settings = Depends(_get_runtime_settings),
     triton_client: TritonClientProtocol = Depends(_get_triton_client),
-    request: Request,
 ) -> EmbeddingsResponse:
     """Generate face embeddings for one or more images."""
     total_start = time.perf_counter()
@@ -224,8 +224,8 @@ async def create_embeddings(
 )
 async def rerank_embeddings(
     payload: RerankRequest,
-    rerank_service: RerankServiceProtocol = Depends(_get_rerank_service),
     request: Request,
+    rerank_service: RerankServiceProtocol = Depends(_get_rerank_service),
 ) -> RerankResponse:
     """Compute rerank scores for candidate embeddings."""
     start_time = time.perf_counter()

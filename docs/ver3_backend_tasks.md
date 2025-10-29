@@ -34,10 +34,10 @@
 17. Add Prometheus-compatible metrics or simple counters if needed by ops (toggle via config).
 
 ## Phase 6 – Testing
-18. Write unit tests for image utilities and rerank initialization (using pytest).
-19. Mock Triton client to test `/embeddings` endpoint responses and error scenarios.
-20. Create deterministic rerank tests comparing expected and actual score outputs.
-21. Prepare load/benchmark script to measure throughput with sample images (`face_v3/images_test`).
+18. ✅ Write unit tests for image utilities and rerank initialization (using pytest). *(tests/test_image_utils.py, tests/test_rerank_service.py)*
+19. ✅ Mock Triton client to test `/embeddings` endpoint responses and error scenarios. *(tests/test_api_endpoints.py)*
+20. ✅ Create deterministic rerank tests comparing expected and actual score outputs. *(tests/test_rerank_service.py)*
+21. ✅ Prepare load/benchmark script to measure throughput with sample images (`face_v3/images_test`). *(scripts/load_test_embeddings.py; dev deps in requirements-dev.txt)*
 
 ## Phase 7 – Packaging & Deployment
 22. Write Dockerfile for the FastAPI service:

@@ -75,10 +75,10 @@
   - For staging/production, extend the compose file with profiles for metrics/monitoring sidecars or adapt it into Kubernetes manifests once requirements outgrow single-host deployment.
 
 ## 8. Testing Strategy
-- Unit tests for image decoding/alignment utilities and rerank wrapper initialization.
-- Integration tests with mocked Triton responses to validate embedding payloads and error paths.
-- Contract tests for `/rerank` using deterministic embeddings to confirm threshold behavior.
-- Load tests sending multi-image batches to measure end-to-end latency and throughput.
+- Unit tests for image decoding/alignment utilities and rerank wrapper initialization (`tests/test_image_utils.py`, `tests/test_rerank_service.py`).
+- Integration tests with mocked Triton responses validating embedding payloads and error paths (`tests/test_api_endpoints.py`).
+- Contract tests for `/rerank` using deterministic embeddings housed alongside the rerank unit tests.
+- Load testing via the async benchmark script in `scripts/load_test_embeddings.py` (cycles over `face_v3/images_test`).
 - Manual verification with `face_v3/images_test` to confirm detection counts, embedding quality, and rerank outputs.
 
 ## 9. Rollout Steps
