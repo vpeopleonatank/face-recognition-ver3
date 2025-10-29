@@ -40,16 +40,16 @@
 21. ✅ Prepare load/benchmark script to measure throughput with sample images (`face_v3/images_test`). *(scripts/load_test_embeddings.py; dev deps in requirements-dev.txt)*
 
 ## Phase 7 – Packaging & Deployment
-22. Write Dockerfile for the FastAPI service:
+22. ✅ Write Dockerfile for the FastAPI service:
     - Install system libs and Python deps.
     - Copy app code and shared libraries.
     - Set entrypoint to `uvicorn`.
-23. Finalize Triton packaging:
+23. ✅ Finalize Triton packaging:
     - Generate TensorRT plans by running `triton-infer-custom/build.sh` (ensures `model.plan` artifacts exist under `models_serving`).
     - Review `triton-infer-custom/Dockerfile` and update dependencies/entrypoint if additional custom ops or models are required.
     - Tag the resulting image (`tritonserver-plan-vnd:24.11-py3` by default) for docker-compose consumption.
-24. Add configuration examples (`.env.example`, docker-compose snippet, or Helm values) referencing both the API and custom Triton services.
-25. Document deployment steps in README or ops doc (environment variables, ports, health checks, Triton image build prerequisites).
+24. ✅ Add configuration examples (`.env.example`, docker-compose snippet, or Helm values) referencing both the API and custom Triton services.
+25. ✅ Document deployment steps in README or ops doc (environment variables, ports, health checks, Triton image build prerequisites).
 
 ## Phase 8 – Integration & Rollout
 26. Run end-to-end tests in staging with the docker-compose stack (FastAPI + custom Triton) and sample images; verify embeddings and rerank outputs.
