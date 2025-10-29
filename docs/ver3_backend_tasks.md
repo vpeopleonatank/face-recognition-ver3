@@ -1,0 +1,54 @@
+# Model v3 Backend – Implementation Task Breakdown
+
+## Phase 1 – Project Skeleton & Dependencies
+1. Scaffold FastAPI project structure (`app/main.py`, `app/api/v1/routes.py`, `app/services`, `app/core`, `app/schemas`, `app/utils`).
+2. Define Python requirements (FastAPI, uvicorn, tritonclient[gRPC], numpy, opencv-python, loguru, pydantic-settings).
+3. Add configuration module (`app/core/config.py`) with environment-driven settings for Triton URL, batch sizes, rerank threshold, optional flags.
+4. Implement application factory in `app/main.py` with startup/shutdown handlers and dependency injection placeholders.
+
+## Phase 2 – Triton Client & Image Utilities
+5. Extract and adapt image preprocessing/alignment helpers from `face_v3/infer.py` into `app/utils/image.py`.
+6. Implement `app/services/triton_client.py`:
+   - Initialize gRPC `InferenceServerClient`.
+   - Provide batched detection (`run_detection`) and extraction (`run_extraction`) helpers.
+   - Expose higher-level methods (e.g., `detect_and_embed(images)`) handling chunking and post-processing.
+7. Add error handling and logging wrappers; ensure model metadata is cached at startup.
+
+## Phase 3 – Embeddings Endpoint
+8. Define Pydantic request/response schemas for `/embeddings` (support multiple images, optional flags).
+9. Implement endpoint handler in `app/api/v1/routes.py`:
+   - Decode incoming images.
+   - Invoke Triton client to get detections + embeddings.
+   - Build response with bounding boxes, landmarks, confidences, embeddings, optional aligned faces.
+10. Add validation for batch size, image dimensions, and aggregate timing metrics.
+
+## Phase 4 – Rerank Service & Endpoint
+11. Port the `RerankComputeCpp` wrapper from `face_v3/test_rerank.py` into `app/services/rerank.py`, adjusting paths and startup initialization.
+12. Wire rerank singleton and expose dependency (`get_rerank_service`) for injection.
+13. Create Pydantic schemas for `/rerank` request (query embedding, candidate embeddings/IDs, optional threshold) and response (scores, metadata).
+14. Implement `/rerank` handler to validate embeddings, call the C++ wrapper, and return scores with latency diagnostics.
+
+## Phase 5 – Health Checks & Instrumentation
+15. Add `/healthz` endpoint verifying Triton connectivity and rerank library availability (optionally run a lightweight inference).
+16. Integrate logging (loguru) and request-level tracing for inference latency, rerank latency, and batch statistics.
+17. Add Prometheus-compatible metrics or simple counters if needed by ops (toggle via config).
+
+## Phase 6 – Testing
+18. Write unit tests for image utilities and rerank initialization (using pytest).
+19. Mock Triton client to test `/embeddings` endpoint responses and error scenarios.
+20. Create deterministic rerank tests comparing expected and actual score outputs.
+21. Prepare load/benchmark script to measure throughput with sample images (`face_v3/images_test`).
+
+## Phase 7 – Packaging & Deployment
+22. Write Dockerfile for the FastAPI service:
+    - Install system libs and Python deps.
+    - Copy app code and shared libraries.
+    - Set entrypoint to `uvicorn`.
+23. Add configuration examples (`.env.example`, docker-compose snippet, or Helm values).
+24. Document deployment steps in README or ops doc (environment variables, ports, health checks).
+
+## Phase 8 – Integration & Rollout
+25. Run end-to-end tests in staging with Triton v3 server and sample images; verify embeddings and rerank outputs.
+26. Coordinate with web backend team to consume `/embeddings` and `/rerank` endpoints (update API contract docs).
+27. Plan production rollout: deploy service, update backend configuration to call new endpoints, monitor metrics/logs, and iterate on thresholds as needed.
+
