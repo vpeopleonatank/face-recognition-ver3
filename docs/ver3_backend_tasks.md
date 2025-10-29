@@ -15,22 +15,22 @@
 7. Add error handling and logging wrappers; ensure model metadata is cached at startup.
 
 ## Phase 3 – Embeddings Endpoint
-8. Define Pydantic request/response schemas for `/embeddings` (support multiple images, optional flags).
-9. Implement endpoint handler in `app/api/v1/routes.py`:
+8. ✅ Define Pydantic request/response schemas for `/embeddings` (support multiple images, optional flags).
+9. ✅ Implement endpoint handler in `app/api/v1/routes.py`:
    - Decode incoming images.
    - Invoke Triton client to get detections + embeddings.
    - Build response with bounding boxes, landmarks, confidences, embeddings, optional aligned faces.
-10. Add validation for batch size, image dimensions, and aggregate timing metrics.
+10. ✅ Add validation for batch size, image dimensions, and aggregate timing metrics.
 
 ## Phase 4 – Rerank Service & Endpoint
-11. Port the `RerankComputeCpp` wrapper from `face_v3/test_rerank.py` into `app/services/rerank.py`, adjusting paths and startup initialization.
-12. Wire rerank singleton and expose dependency (`get_rerank_service`) for injection.
-13. Create Pydantic schemas for `/rerank` request (query embedding, candidate embeddings/IDs, optional threshold) and response (scores, metadata).
-14. Implement `/rerank` handler to validate embeddings, call the C++ wrapper, and return scores with latency diagnostics.
+11. ✅ Port the `RerankComputeCpp` wrapper from `face_v3/test_rerank.py` into `app/services/rerank.py`, adjusting paths and startup initialization.
+12. ✅ Wire rerank singleton and expose dependency (`get_rerank_service`) for injection.
+13. ✅ Create Pydantic schemas for `/rerank` request (query embedding, candidate embeddings/IDs, optional threshold) and response (scores, metadata).
+14. ✅ Implement `/rerank` handler to validate embeddings, call the C++ wrapper, and return scores with latency diagnostics.
 
 ## Phase 5 – Health Checks & Instrumentation
-15. Add `/healthz` endpoint verifying Triton connectivity and rerank library availability (optionally run a lightweight inference).
-16. Integrate logging (loguru) and request-level tracing for inference latency, rerank latency, and batch statistics.
+15. ✅ Add `/healthz` endpoint verifying Triton connectivity and rerank library availability (optionally run a lightweight inference).
+16. ✅ Integrate logging (loguru) and request-level tracing for inference latency, rerank latency, and batch statistics.
 17. Add Prometheus-compatible metrics or simple counters if needed by ops (toggle via config).
 
 ## Phase 6 – Testing

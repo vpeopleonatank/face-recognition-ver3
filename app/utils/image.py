@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import io
+import base64
+import binascii
 from dataclasses import dataclass
 from typing import Sequence, Tuple
 
@@ -142,3 +144,40 @@ def normalize_embeddings(vectors: np.ndarray, *, axis: int = 1) -> np.ndarray:
     # Avoid division by zero by falling back to ones.
     norms = np.where(norms == 0, 1.0, norms)
     return vectors / norms
+
+
+def decode_base64_image(data: str) -> np.ndarray:
+    """Decode a base64-encoded string (optionally prefixed with data URI) into a BGR image."""
+    raw_bytes = decode_base64_to_bytes(data)
+    return bytes_to_image(raw_bytes)
+
+
+def decode_base64_to_bytes(data: str) -> bytes:
+    """Decode a base64 string, handling optional data URI prefixes."""
+    if "," in data:
+        data = data.split(",", 1)[1]
+    try:
+        return base64.b64decode(data, validate=True)
+    except binascii.Error as exc:  # pragma: no cover - defensive
+        raise ValueError("Invalid base64-encoded data") from exc
+
+
+def image_to_base64(image: np.ndarray, *, format: str = "JPEG", quality: int = 95) -> str:
+    """Encode a BGR image into a base64 string."""
+    if image.ndim != 3 or image.shape[2] not in (3, 4):
+        raise ValueError("Expected image with 3 or 4 channels for base64 encoding")
+
+    ext = ".jpg"
+    params: list[int] = []
+    if format.upper() == "PNG":
+        ext = ".png"
+    elif format.upper() in {"JPG", "JPEG"}:
+        params = [cv2.IMWRITE_JPEG_QUALITY, quality]
+    else:
+        raise ValueError(f"Unsupported image format '{format}'")
+
+    success, buffer = cv2.imencode(ext, image, params)
+    if not success:
+        raise ValueError("Failed to encode image to base64 string")
+
+    return base64.b64encode(buffer.tobytes()).decode("utf-8")

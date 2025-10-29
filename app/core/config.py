@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     rerank_threshold: float = 0.5
     return_aligned: bool = False
     skip_embedding_normalization: bool = False
+    rerank_library_path: str = "face_v3/libs/librerank_compute.so"
+    embedding_dimension: int = 1024
 
     log_level: str = "INFO"
 

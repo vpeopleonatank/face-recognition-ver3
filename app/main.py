@@ -9,7 +9,7 @@ from loguru import logger
 
 from app.api.v1.routes import router
 from app.core.config import Settings, get_settings
-from app.services.rerank import RerankServiceProtocol
+from app.services.rerank import RerankService, RerankServiceProtocol
 from app.services.triton_client import ModelIOConfig, TritonClient, TritonClientProtocol
 
 
@@ -41,7 +41,7 @@ def _lifespan_context(*, settings: Settings):
         if triton_client:
             await triton_client.warmup()
         app.state.triton_client = triton_client
-        app.state.rerank_service = None  # placeholder for future rerank service
+        app.state.rerank_service = _create_rerank_service(settings)
 
         yield
 
@@ -83,6 +83,19 @@ def _create_triton_client(settings: Settings) -> TritonClient | None:
         )
     except Exception as exc:  # pragma: no cover - startup failure
         logger.error("Failed to initialize Triton client: {}", exc)
+        raise
+
+
+def _create_rerank_service(settings: Settings) -> RerankService:
+    """Instantiate the rerank service wrapper."""
+    try:
+        return RerankService(
+            library_path=settings.rerank_library_path,
+            embedding_dimension=settings.embedding_dimension,
+            default_threshold=settings.rerank_threshold,
+        )
+    except Exception as exc:  # pragma: no cover - startup failure
+        logger.error("Failed to initialize rerank service: {}", exc)
         raise
 
 
