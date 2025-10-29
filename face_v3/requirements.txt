@@ -1,0 +1,7 @@
+opencv-python
+tritonclient[all]
+pyyaml
+Pillow
+scikit-image
+scikit-learn
+loguru
