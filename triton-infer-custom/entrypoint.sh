@@ -6,6 +6,7 @@ PYTHON_BIN=python3
 check_module() {
   ${PYTHON_BIN} - <<'PY'
 import importlib
+import torch  # ensure libtorch is loaded before the extension
 mod = importlib.import_module("rpe_index_cpp")
 if not hasattr(mod, "forward_gpu"):
     raise AttributeError("forward_gpu missing")

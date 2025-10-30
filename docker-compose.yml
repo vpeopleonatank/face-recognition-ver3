@@ -5,7 +5,7 @@ services:
     image: tritonserver-plan-vnd:24.11-py3
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "8008:8001"
     environment:
       - CUDA_VISIBLE_DEVICES=0
     healthcheck:
@@ -30,7 +30,7 @@ services:
     environment:
       - FACE_V3_TRITON_URL=triton:8001
     ports:
-      - "8000:8000"
+      - "8009:8000"
     depends_on:
       triton:
         condition: service_healthy
