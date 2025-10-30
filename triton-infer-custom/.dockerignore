@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+
+# Drop local build artefacts for CUDA extension; it rebuilds inside the container.
+models_serving/split_b/1/.cached_model/extractor/models/vit_kprpe/RPE/rpe_ops/build
+models_serving/split_b/1/.cached_model/extractor/models/vit_kprpe/RPE/rpe_ops/dist

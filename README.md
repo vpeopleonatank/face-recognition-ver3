@@ -39,7 +39,7 @@ docker compose up --build
 
 Services:
 - `api` (port 8000) – FastAPI server exposing `/api/v1/embeddings`, `/api/v1/rerank`, and `/healthz`.
-- `triton` (port 8001) – Custom Triton server loaded with the v3 detection and embedding ensembles.
+- `triton` (port 8001) – Custom Triton server loaded with the v3 detection and embedding ensembles. On first start it compiles the CUDA `rpe_ops` extension inside the container (uses the GPU); this step is cached on subsequent runs.
 
 The API waits for Triton to pass its readiness probe (`http://triton:8000/v2/health/ready`) before starting.
 
@@ -69,3 +69,5 @@ docker compose down
 ```
 
 Regenerate TensorRT engines by rerunning `build.sh` whenever the ONNX models change.
+
+If the Triton image is rebuilt, run `docker compose build triton` (or `docker compose up --build`) to refresh the container so the startup hook can rebuild the CUDA extension.
