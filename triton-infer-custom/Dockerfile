@@ -21,7 +21,10 @@ RUN pip3 install --no-cache-dir --extra-index-url https://download.pytorch.org/w
         transformers \
         torchvision \
         omegaconf \
-        timm
+        timm \
+        accelerate \
+        easydict \
+        scikit-image
 
 COPY models_serving /models
 
