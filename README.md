@@ -22,6 +22,7 @@ The script produces `model.plan` artifacts inside `triton-infer-custom/models_se
 
 ## Build The FastAPI Image
 1. Copy `.env.example` to `.env` and adjust values, especially:
+   - `FACE_V3_API_KEY=` (set to the shared secret required in the `X-API-KEY` header)
    - `FACE_V3_TRITON_URL=triton:8001`
    - `FACE_V3_RERANK_LIBRARY_PATH=/opt/face_backend/libs/librerank_compute.so`
    - Batch sizes, model names, or thresholds as needed.
@@ -56,6 +57,7 @@ The API waits for Triton to pass its readiness probe (`http://triton:8000/v2/hea
 | `FACE_V3_EXTRACTION_MODEL_NAME` | Triton embedding model | `extraction` |
 | `FACE_V3_DETECTION_INPUT_WIDTH/HEIGHT` | Detection input resolution | `640` |
 | `FACE_V3_MAX_BATCH_SIZE` | Max images per batch | `8` |
+| `FACE_V3_API_KEY` | Shared secret required in the `X-API-KEY` header | _(empty)_ |
 | `FACE_V3_RERANK_LIBRARY_PATH` | Path to `librerank_compute.so` inside the API container | `/opt/face_backend/libs/librerank_compute.so` |
 | `FACE_V3_RERANK_THRESHOLD` | Default rerank acceptance threshold | `0.5` |
 | `FACE_V3_RETURN_ALIGNED` | Include aligned crops in responses | `false` |

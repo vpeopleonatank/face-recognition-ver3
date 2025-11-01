@@ -12,6 +12,8 @@ from app.core.config import Settings
 from app.services.triton_client import DetectionResult, TritonClientError
 from app.utils.image import image_to_base64
 
+TEST_API_KEY = "test-api-key"
+
 
 class DummyTritonClient:
     def __init__(self, *, response: list[list[DetectionResult]] | None = None, error: Exception | None = None) -> None:
@@ -78,6 +80,7 @@ def make_test_app() -> callable:
             rerank_library_path="face_v3/libs/librerank_compute.so",
             detection_input_width=160,
             detection_input_height=160,
+            api_key=TEST_API_KEY,
         )
         app = FastAPI()
         app.state.settings = settings
@@ -113,7 +116,11 @@ def test_embeddings_endpoint_success(make_test_app) -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/embeddings", json=payload)
+        response = client.post(
+            "/api/v1/embeddings",
+            json=payload,
+            headers={"X-API-KEY": TEST_API_KEY},
+        )
 
     assert response.status_code == 200
     body = response.json()
@@ -136,7 +143,11 @@ def test_embeddings_endpoint_invalid_base64(make_test_app) -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/embeddings", json=payload)
+        response = client.post(
+            "/api/v1/embeddings",
+            json=payload,
+            headers={"X-API-KEY": TEST_API_KEY},
+        )
 
     assert response.status_code == 400
 
@@ -151,7 +162,11 @@ def test_embeddings_endpoint_handles_triton_failure(make_test_app) -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/embeddings", json=payload)
+        response = client.post(
+            "/api/v1/embeddings",
+            json=payload,
+            headers={"X-API-KEY": TEST_API_KEY},
+        )
 
     assert response.status_code == 502
 
@@ -171,7 +186,11 @@ def test_rerank_endpoint_success(make_test_app) -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/rerank", json=payload)
+        response = client.post(
+            "/api/v1/rerank",
+            json=payload,
+            headers={"X-API-KEY": TEST_API_KEY},
+        )
 
     assert response.status_code == 200
     body = response.json()
@@ -194,9 +213,36 @@ def test_rerank_endpoint_handles_validation_error(make_test_app) -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/rerank", json=payload)
+        response = client.post(
+            "/api/v1/rerank",
+            json=payload,
+            headers={"X-API-KEY": TEST_API_KEY},
+        )
 
     assert response.status_code == 400
+
+
+def test_embeddings_endpoint_rejects_missing_api_key(make_test_app) -> None:
+    detection = DetectionResult(
+        bbox=np.array([1.0, 2.0, 50.0, 60.0], dtype=np.float32),
+        confidence=0.95,
+        landmarks=np.ones((5, 2), dtype=np.float32),
+        face_size=48.0,
+        aligned_face=np.zeros((112, 112, 3), dtype=np.uint8),
+        embedding=np.array([0.1, 0.2, 0.3], dtype=np.float32),
+    )
+    triton_client = DummyTritonClient(response=[[detection]])
+    rerank_service = DummyRerankService()
+    app = make_test_app(triton_client=triton_client, rerank_service=rerank_service)
+
+    payload = {
+        "images": [{"id": "img1", "data": _make_test_image_base64()}],
+    }
+
+    with TestClient(app) as client:
+        response = client.post("/api/v1/embeddings", json=payload)
+
+    assert response.status_code == 401
 
 
 def test_rerank_endpoint_handles_runtime_error(make_test_app) -> None:
@@ -212,6 +258,10 @@ def test_rerank_endpoint_handles_runtime_error(make_test_app) -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/rerank", json=payload)
+        response = client.post(
+            "/api/v1/rerank",
+            json=payload,
+            headers={"X-API-KEY": TEST_API_KEY},
+        )
 
     assert response.status_code == 502

@@ -6,7 +6,8 @@ import uuid
 from typing import Sequence
 
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Security, status
+from fastapi.security import APIKeyHeader
 from loguru import logger
 
 from app.core.config import Settings, get_settings
@@ -24,6 +25,7 @@ from app.services.triton_client import DetectionResult, TritonClientError, Trito
 from app.utils.image import bytes_to_image, decode_base64_to_bytes, image_to_base64
 
 router = APIRouter()
+_api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 
 def _get_runtime_settings(request: Request) -> Settings:
@@ -66,6 +68,23 @@ def _resolve_request_id(request: Request) -> str:
     return uuid.uuid4().hex
 
 
+def _require_api_key(
+    api_key: str | None = Security(_api_key_header),
+    settings: Settings = Depends(_get_runtime_settings),
+) -> None:
+    """Validate X-API-KEY header when an API key is configured."""
+    expected_key = (settings.api_key or "").strip()
+    if not expected_key:
+        return
+
+    if api_key != expected_key:
+        logger.warning("Request denied due to invalid API key")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API key",
+        )
+
+
 @router.get("/healthz")
 async def read_health(
     request: Request, settings: Settings = Depends(_get_runtime_settings)
@@ -92,6 +111,7 @@ async def create_embeddings(
     request: Request,
     settings: Settings = Depends(_get_runtime_settings),
     triton_client: TritonClientProtocol = Depends(_get_triton_client),
+    _: None = Depends(_require_api_key),
 ) -> EmbeddingsResponse:
     """Generate face embeddings for one or more images."""
     total_start = time.perf_counter()
@@ -226,6 +246,7 @@ async def rerank_embeddings(
     payload: RerankRequest,
     request: Request,
     rerank_service: RerankServiceProtocol = Depends(_get_rerank_service),
+    _: None = Depends(_require_api_key),
 ) -> RerankResponse:
     """Compute rerank scores for candidate embeddings."""
     start_time = time.perf_counter()

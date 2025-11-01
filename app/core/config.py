@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     )
     app_name: str = "Face Search Backend"
     api_prefix: str = "/api/v1"
+    api_key: str | None = None
 
     triton_url: str = "localhost:8001"
     triton_healthcheck: bool = True
